@@ -7,7 +7,9 @@ Integration tests for validating that trestle-bot output is consumable by comply
 
 import logging
 import pathlib
-from typing import Tuple
+import shutil
+import tempfile
+from typing import Tuple, Generator, TypeVar
 
 import pytest
 from click import BaseCommand
@@ -15,6 +17,7 @@ from click.testing import CliRunner
 
 from git import Repo
 
+from int.int_setup import setup_complytime
 from trestlebot.cli.commands.sync_cac_content import sync_cac_catalog_cmd, sync_cac_content_profile_cmd, \
     sync_content_to_component_definition_cmd
 from tests.testutils import TEST_DATA_DIR, setup_for_catalog, setup_for_profile
@@ -23,6 +26,17 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
 test_content_dir = TEST_DATA_DIR / "content_dir"
+
+T = TypeVar("T")
+YieldFixture = Generator[T, None, None]
+
+_TEST_PREFIX = "trestlebot_tests"
+
+# def tmp_init_dir() -> YieldFixture[str]:
+#     tmpdir = tempfile.mkdtemp(prefix=_TEST_PREFIX)
+#     yield tmpdir
+#     shutil.rmtree(tmpdir)
+
 
 @pytest.mark.slow
 def test_sync_catalog(tmp_repo: Tuple[str, Repo]) -> None:
@@ -61,8 +75,10 @@ def test_sync_catalog(tmp_repo: Tuple[str, Repo]) -> None:
 
 
 @pytest.mark.slow
-def test_sync_component_definition() -> None:
+def test_sync_component_definition(tmp_init_dir: str) -> None:
     """Test `trestlebot sync component-definition`"""
+    tmp_init_dir = pathlib.Path(tmp_init_dir)
+    setup_complytime(tmp_init_dir)
     assert True
 
 
