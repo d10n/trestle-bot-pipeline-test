@@ -4,24 +4,19 @@
 """
 Integration tests for validating that trestle-bot output is consumable by complytime
 """
-
+import json
 import logging
 import pathlib
-import shutil
 import subprocess
-import tempfile
 from typing import Tuple, Generator, TypeVar
 
 import pytest
 from click import BaseCommand
 from click.testing import CliRunner
-
 from git import Repo
 
-from int.int_setup import setup_complytime
-from trestlebot.cli.commands.sync_cac_content import sync_cac_catalog_cmd, sync_cac_content_profile_cmd, \
-    sync_content_to_component_definition_cmd
 from tests.testutils import TEST_DATA_DIR, setup_for_catalog, setup_for_profile
+from trestlebot.cli.commands.sync_cac_content import sync_cac_catalog_cmd, sync_content_to_component_definition_cmd
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -36,16 +31,19 @@ _TEST_PREFIX = "trestlebot_tests"
 
 @pytest.mark.slow
 def test_complytime_setup() -> None:
+    """Ensure that the complytime integration test setup works"""
     result = subprocess.run(
-        ['complytime', 'list'],
+        ['complytime', 'list', '--plain'],
         # cwd=complytime_home,
         capture_output=True,
     )
     assert result.returncode == 0
+    assert b'Title' in result.stdout
+    assert b'Framework ID' in result.stdout
 
 
-@pytest.mark.slow
-def test_sync_catalog(tmp_repo: Tuple[str, Repo]) -> None:
+# @pytest.mark.slow
+def test_full_sync(tmp_repo: Tuple[str, Repo], complytime_home: pathlib.Path) -> None:
     repo_dir, _ = tmp_repo
     repo_path = pathlib.Path(repo_dir)
     setup_for_catalog(repo_path, "simplified_nist_catalog", "catalog")
@@ -76,79 +74,29 @@ def test_sync_catalog(tmp_repo: Tuple[str, Repo]) -> None:
     # Check the CLI sync-cac-content is successful
     assert result.exit_code == 0, result.output
 
-
-
-
-
-@pytest.mark.slow
-def test_sync_component_definition(tmp_init_dir: str) -> None:
-    """Test `trestlebot sync component-definition`"""
-    tmp_init_dir = pathlib.Path(tmp_init_dir)
-    setup_complytime(tmp_init_dir)
-    assert True
-
-
-
-@pytest.mark.slow
-def test_sync_profile(tmp_repo: Tuple[str, Repo]) -> None:
-    """Test `trestlebot sync profile`"""
-    repo_dir, _ = tmp_repo
-    repo_path = pathlib.Path(repo_dir)
-
-    setup_for_catalog(repo_path, "simplified_nist_catalog", "catalog")
-
-    runner = CliRunner()
-    result = runner.invoke(
-        sync_cac_content_profile_cmd,
-        [
-            "--repo-path",
-            str(repo_path.resolve()),
-            "--cac-content-root",
-            str(test_content_dir),
-            "--product",
-            "rhel8",
-            "--oscal-catalog",
-            "simplified_nist_catalog",
-            "--policy-id",
-            "1234-levels",
-            "--filter-by-level",
-            "medium",
-            "--committer-email",
-            "test@email.com",
-            "--committer-name",
-            "test name",
-            "--branch",
-            "test",
-            "--dry-run",
-        ],
-    )
-    assert result.exit_code == 0
-    assert True
-
-
-@pytest.mark.slow
-def test_create_compdef(tmp_repo: Tuple[str, Repo]) -> None:
-    """Test `trestlebot create compdef`"""
-    repo_dir, _ = tmp_repo
-    repo_path = pathlib.Path(repo_dir)
-    setup_for_catalog(repo_path, "simplified_nist_catalog", "catalog")
-    setup_for_profile(repo_path, "simplified_nist_profile", "profile")
-    test_comp_path = "component-definitions/rhel8/component-definition.json"
+    test_product = 'rhel8'
+    test_cac_profile = "products/rhel8/profiles/example.profile"
+    test_prof = "simplified_nist_profile"
+    test_comp_path = f"component-definitions/{test_product}/component-definition.json"
+    test_cat = "simplified_nist_catalog"
+    assert isinstance(sync_content_to_component_definition_cmd, BaseCommand)
+    setup_for_catalog(repo_path, test_cat, "catalog")
+    setup_for_profile(repo_path, test_prof, "profile")
 
     runner = CliRunner()
     result = runner.invoke(
         sync_content_to_component_definition_cmd,
         [
             "--product",
-            "rhel8",
+            test_product,
             "--repo-path",
             str(repo_path.resolve()),
             "--cac-content-root",
             test_content_dir,
             "--cac-profile",
-            "products/rhel8/profiles/example.profile",
+            test_cac_profile,
             "--oscal-profile",
-            "simplified_nist_profile",
+            test_prof,
             "--committer-email",
             "test@email.com",
             "--committer-name",
@@ -156,16 +104,265 @@ def test_create_compdef(tmp_repo: Tuple[str, Repo]) -> None:
             "--branch",
             "test",
             "--dry-run",
-            "--component-definition-type",
-            "validation",
         ],
     )
     # Check the CLI sync-cac-content is successful
     assert result.exit_code == 0
-    assert True
+    component_definition = repo_path.joinpath(test_comp_path)
+    # Check if the component definition is created
+    assert component_definition.exists()
+
+    # Fix trestle:// to file://
+
+    new_cat_json_text = (pathlib.Path(repo_dir) / 'catalogs/simplified_nist_catalog/catalog.json').read_text()
+    new_cat_json_text = new_cat_json_text.replace('trestle://catalogs/simplified_nist_catalog/catalog.json', 'file://controls/catalog.json')
+    new_cat_json = json.loads(new_cat_json_text)
+
+    new_prof_json_text = (pathlib.Path(repo_dir) / 'profiles/simplified_nist_profile/profile.json').read_text()
+    new_prof_json_text = new_prof_json_text.replace('trestle://catalogs/simplified_nist_catalog/catalog.json', 'file://controls/catalog.json')
+    new_prof_json_text = new_prof_json_text.replace('"param_id"', '"param-id"')  # TODO compliance-trestle uses param_id and param-id interchangably, complytime requires param-id
+    new_prof_json = json.loads(new_prof_json_text)
+
+    new_cd_json_text = component_definition.read_text()
+    new_cd_json_text = new_cd_json_text.replace('trestle://profiles/simplified_nist_profile/profile.json', 'file://controls/profile.json')
+    new_cd_json = json.loads(new_cd_json_text)
+
+    with open((complytime_home / '.config/complytime/controls/catalog.json'), 'w') as file:
+        json.dump(new_cat_json, file)
+    with open((complytime_home / '.config/complytime/controls/profile.json'), 'w') as file:
+        json.dump(new_prof_json, file)
+    with open((complytime_home / '.config/complytime/bundles/component-definition.json'), 'w') as file:
+        json.dump(new_cd_json, file)
+
+    # shutil.copy(component_definition, complytime_home / '.config/complytime/bundles/')
+    # shutil.copy(pathlib.Path(repo_dir) / 'catalogs/simplified_nist_catalog/catalog.json', complytime_home / '.config/complytime/bundles/')
+    # shutil.copy(pathlib.Path(repo_dir) / 'profiles/simplified_nist_profile/profile.json', complytime_home / '.config/complytime/controls/')
+
+    result = subprocess.run(
+        ['complytime', 'list', '--plain'],
+        # cwd=complytime_home,
+        capture_output=True,
+    )
+    assert result.returncode == 0
+    assert b'Title' in result.stdout
+    assert b'Framework ID' in result.stdout
 
 
 @pytest.mark.slow
-def test_create_ssp() -> None:
-    """Test `trestlebot create ssp`"""
-    assert True
+def test_compdef_type_software_sync(tmp_repo: Tuple[str, Repo], complytime_home: pathlib.Path) -> None:
+    repo_dir, _ = tmp_repo
+    repo_path = pathlib.Path(repo_dir)
+    setup_for_catalog(repo_path, "simplified_nist_catalog", "catalog")
+    test_cac_control = "abcd-levels"
+
+    runner = CliRunner()
+    assert isinstance(sync_cac_catalog_cmd, BaseCommand)
+    result = runner.invoke(
+        sync_cac_catalog_cmd,
+        [
+            "--cac-content-root",
+            test_content_dir,
+            "--repo-path",
+            str(repo_path.resolve()),
+            "--policy-id",
+            test_cac_control,
+            "--oscal-catalog",
+            test_cac_control,
+            "--committer-email",
+            "test@email.com",
+            "--committer-name",
+            "test name",
+            "--branch",
+            "test",
+            "--dry-run",
+        ],
+    )
+    # Check the CLI sync-cac-content is successful
+    assert result.exit_code == 0, result.output
+
+    test_product = 'rhel8'
+    test_cac_profile = "products/rhel8/profiles/example.profile"
+    test_prof = "simplified_nist_profile"
+    test_comp_path = f"component-definitions/{test_product}/component-definition.json"
+    test_cat = "simplified_nist_catalog"
+    assert isinstance(sync_content_to_component_definition_cmd, BaseCommand)
+    setup_for_catalog(repo_path, test_cat, "catalog")
+    setup_for_profile(repo_path, test_prof, "profile")
+
+    compdef_type = 'software'
+
+    runner = CliRunner()
+    result = runner.invoke(
+        sync_content_to_component_definition_cmd,
+        [
+            "--product",
+            test_product,
+            "--repo-path",
+            str(repo_path.resolve()),
+            "--cac-content-root",
+            test_content_dir,
+            "--cac-profile",
+            test_cac_profile,
+            "--oscal-profile",
+            test_prof,
+            "--component-definition-type",
+            compdef_type,
+            "--committer-email",
+            "test@email.com",
+            "--committer-name",
+            "test name",
+            "--branch",
+            "test",
+            "--dry-run",
+        ],
+    )
+    # Check the CLI sync-cac-content is successful
+    assert result.exit_code == 0
+    component_definition = repo_path.joinpath(test_comp_path)
+    # Check if the component definition is created
+    assert component_definition.exists()
+
+    # Fix trestle:// to file://
+
+    new_cat_json_text = (pathlib.Path(repo_dir) / 'catalogs/simplified_nist_catalog/catalog.json').read_text()
+    new_cat_json_text = new_cat_json_text.replace('trestle://catalogs/simplified_nist_catalog/catalog.json', 'file://controls/catalog.json')
+    new_cat_json = json.loads(new_cat_json_text)
+
+    new_prof_json_text = (pathlib.Path(repo_dir) / 'profiles/simplified_nist_profile/profile.json').read_text()
+    new_prof_json_text = new_prof_json_text.replace('trestle://catalogs/simplified_nist_catalog/catalog.json', 'file://controls/catalog.json')
+    new_prof_json_text = new_prof_json_text.replace('"param_id"', '"param-id"')  # TODO compliance-trestle uses param_id and param-id interchangably, complytime requires param-id
+    new_prof_json = json.loads(new_prof_json_text)
+
+    new_cd_json_text = component_definition.read_text()
+    new_cd_json_text = new_cd_json_text.replace('trestle://profiles/simplified_nist_profile/profile.json', 'file://controls/profile.json')
+    new_cd_json = json.loads(new_cd_json_text)
+
+    with open((complytime_home / '.config/complytime/controls/catalog.json'), 'w') as file:
+        json.dump(new_cat_json, file)
+    with open((complytime_home / '.config/complytime/controls/profile.json'), 'w') as file:
+        json.dump(new_prof_json, file)
+    with open((complytime_home / '.config/complytime/bundles/component-definition.json'), 'w') as file:
+        json.dump(new_cd_json, file)
+
+    # shutil.copy(component_definition, complytime_home / '.config/complytime/bundles/')
+    # shutil.copy(pathlib.Path(repo_dir) / 'catalogs/simplified_nist_catalog/catalog.json', complytime_home / '.config/complytime/bundles/')
+    # shutil.copy(pathlib.Path(repo_dir) / 'profiles/simplified_nist_profile/profile.json', complytime_home / '.config/complytime/controls/')
+
+    result = subprocess.run(
+        ['complytime', 'list', '--plain'],
+        # cwd=complytime_home,
+        capture_output=True,
+    )
+    assert result.returncode == 0
+    assert b'Title' in result.stdout
+    assert b'Framework ID' in result.stdout
+
+
+@pytest.mark.slow
+def test_compdef_type_validation_sync(tmp_repo: Tuple[str, Repo], complytime_home: pathlib.Path) -> None:
+    repo_dir, _ = tmp_repo
+    repo_path = pathlib.Path(repo_dir)
+    setup_for_catalog(repo_path, "simplified_nist_catalog", "catalog")
+    test_cac_control = "abcd-levels"
+
+    runner = CliRunner()
+    assert isinstance(sync_cac_catalog_cmd, BaseCommand)
+    result = runner.invoke(
+        sync_cac_catalog_cmd,
+        [
+            "--cac-content-root",
+            test_content_dir,
+            "--repo-path",
+            str(repo_path.resolve()),
+            "--policy-id",
+            test_cac_control,
+            "--oscal-catalog",
+            test_cac_control,
+            "--committer-email",
+            "test@email.com",
+            "--committer-name",
+            "test name",
+            "--branch",
+            "test",
+            "--dry-run",
+        ],
+    )
+    # Check the CLI sync-cac-content is successful
+    assert result.exit_code == 0, result.output
+
+    test_product = 'rhel8'
+    test_cac_profile = "products/rhel8/profiles/example.profile"
+    test_prof = "simplified_nist_profile"
+    test_comp_path = f"component-definitions/{test_product}/component-definition.json"
+    test_cat = "simplified_nist_catalog"
+    assert isinstance(sync_content_to_component_definition_cmd, BaseCommand)
+    setup_for_catalog(repo_path, test_cat, "catalog")
+    setup_for_profile(repo_path, test_prof, "profile")
+
+    compdef_type = 'validation'
+
+    runner = CliRunner()
+    result = runner.invoke(
+        sync_content_to_component_definition_cmd,
+        [
+            "--product",
+            test_product,
+            "--repo-path",
+            str(repo_path.resolve()),
+            "--cac-content-root",
+            test_content_dir,
+            "--cac-profile",
+            test_cac_profile,
+            "--oscal-profile",
+            test_prof,
+            "--component-definition-type",
+            compdef_type,
+            "--committer-email",
+            "test@email.com",
+            "--committer-name",
+            "test name",
+            "--branch",
+            "test",
+            "--dry-run",
+        ],
+    )
+    # Check the CLI sync-cac-content is successful
+    assert result.exit_code == 0
+    component_definition = repo_path.joinpath(test_comp_path)
+    # Check if the component definition is created
+    assert component_definition.exists()
+
+    # Fix trestle:// to file://
+
+    new_cat_json_text = (pathlib.Path(repo_dir) / 'catalogs/simplified_nist_catalog/catalog.json').read_text()
+    new_cat_json_text = new_cat_json_text.replace('trestle://catalogs/simplified_nist_catalog/catalog.json', 'file://controls/catalog.json')
+    new_cat_json = json.loads(new_cat_json_text)
+
+    new_prof_json_text = (pathlib.Path(repo_dir) / 'profiles/simplified_nist_profile/profile.json').read_text()
+    new_prof_json_text = new_prof_json_text.replace('trestle://catalogs/simplified_nist_catalog/catalog.json', 'file://controls/catalog.json')
+    new_prof_json_text = new_prof_json_text.replace('"param_id"', '"param-id"')  # TODO compliance-trestle uses param_id and param-id interchangably, complytime requires param-id
+    new_prof_json = json.loads(new_prof_json_text)
+
+    new_cd_json_text = component_definition.read_text()
+    new_cd_json_text = new_cd_json_text.replace('trestle://profiles/simplified_nist_profile/profile.json', 'file://controls/profile.json')
+    new_cd_json = json.loads(new_cd_json_text)
+
+    with open((complytime_home / '.config/complytime/controls/catalog.json'), 'w') as file:
+        json.dump(new_cat_json, file)
+    with open((complytime_home / '.config/complytime/controls/profile.json'), 'w') as file:
+        json.dump(new_prof_json, file)
+    with open((complytime_home / '.config/complytime/bundles/component-definition.json'), 'w') as file:
+        json.dump(new_cd_json, file)
+
+    # shutil.copy(component_definition, complytime_home / '.config/complytime/bundles/')
+    # shutil.copy(pathlib.Path(repo_dir) / 'catalogs/simplified_nist_catalog/catalog.json', complytime_home / '.config/complytime/bundles/')
+    # shutil.copy(pathlib.Path(repo_dir) / 'profiles/simplified_nist_profile/profile.json', complytime_home / '.config/complytime/controls/')
+
+    result = subprocess.run(
+        ['complytime', 'list', '--plain'],
+        # cwd=complytime_home,
+        capture_output=True,
+    )
+    assert result.returncode == 0
+    assert b'Title' in result.stdout
+    assert b'Framework ID' in result.stdout
