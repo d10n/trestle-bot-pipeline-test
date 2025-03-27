@@ -8,6 +8,7 @@ Integration tests for validating that trestle-bot output is consumable by comply
 import logging
 import pathlib
 import shutil
+import subprocess
 import tempfile
 from typing import Tuple, Generator, TypeVar
 
@@ -32,10 +33,15 @@ YieldFixture = Generator[T, None, None]
 
 _TEST_PREFIX = "trestlebot_tests"
 
-# def tmp_init_dir() -> YieldFixture[str]:
-#     tmpdir = tempfile.mkdtemp(prefix=_TEST_PREFIX)
-#     yield tmpdir
-#     shutil.rmtree(tmpdir)
+
+@pytest.mark.slow
+def test_complytime_setup() -> None:
+    result = subprocess.run(
+        ['complytime', 'list'],
+        # cwd=complytime_home,
+        capture_output=True,
+    )
+    assert result.returncode == 0
 
 
 @pytest.mark.slow
