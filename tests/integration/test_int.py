@@ -37,13 +37,13 @@ _TEST_PREFIX = "trestlebot_tests"
 def test_complytime_setup() -> None:
     """Ensure that the complytime integration test setup works"""
     result = subprocess.run(
-        ['complytime', 'list', '--plain'],
+        ["complytime", "list", "--plain"],
         # cwd=complytime_home,
         capture_output=True,
     )
     assert result.returncode == 0
-    assert b'Title' in result.stdout
-    assert b'Framework ID' in result.stdout
+    assert b"Title" in result.stdout
+    assert b"Framework ID" in result.stdout
 
 
 # @pytest.mark.slow
@@ -78,7 +78,7 @@ def test_full_sync(tmp_repo: Tuple[str, Repo], complytime_home: pathlib.Path) ->
     # Check the CLI sync-cac-content is successful
     assert result.exit_code == 0, result.output
 
-    test_product = 'rhel8'
+    test_product = "rhel8"
     test_cac_profile = "products/rhel8/profiles/example.profile"
     test_prof = "simplified_nist_profile"
     test_comp_path = f"component-definitions/{test_product}/component-definition.json"
@@ -118,42 +118,67 @@ def test_full_sync(tmp_repo: Tuple[str, Repo], complytime_home: pathlib.Path) ->
 
     # Fix trestle:// to file://
 
-    new_cat_json_text = (pathlib.Path(repo_dir) / 'catalogs/simplified_nist_catalog/catalog.json').read_text()
-    new_cat_json_text = new_cat_json_text.replace('trestle://catalogs/simplified_nist_catalog/catalog.json', 'file://controls/catalog.json')
+    new_cat_json_text = (
+        pathlib.Path(repo_dir) / "catalogs/simplified_nist_catalog/catalog.json"
+    ).read_text()
+    new_cat_json_text = new_cat_json_text.replace(
+        "trestle://catalogs/simplified_nist_catalog/catalog.json",
+        "file://controls/catalog.json",
+    )
     new_cat_json = json.loads(new_cat_json_text)
 
-    new_prof_json_text = (pathlib.Path(repo_dir) / 'profiles/simplified_nist_profile/profile.json').read_text()
-    new_prof_json_text = new_prof_json_text.replace('trestle://catalogs/simplified_nist_catalog/catalog.json', 'file://controls/catalog.json')
-    new_prof_json_text = new_prof_json_text.replace('"param_id"', '"param-id"')  # TODO compliance-trestle uses param_id and param-id interchangably, complytime requires param-id
+    new_prof_json_text = (
+        pathlib.Path(repo_dir) / "profiles/simplified_nist_profile/profile.json"
+    ).read_text()
+    new_prof_json_text = new_prof_json_text.replace(
+        "trestle://catalogs/simplified_nist_catalog/catalog.json",
+        "file://controls/catalog.json",
+    )
+    new_prof_json_text = new_prof_json_text.replace(
+        '"param_id"', '"param-id"'
+    )  # TODO compliance-trestle uses param_id and param-id interchangably, complytime requires param-id
     new_prof_json = json.loads(new_prof_json_text)
 
     new_cd_json_text = component_definition.read_text()
-    new_cd_json_text = new_cd_json_text.replace('trestle://profiles/simplified_nist_profile/profile.json', 'file://controls/profile.json')
+    new_cd_json_text = new_cd_json_text.replace(
+        "trestle://profiles/simplified_nist_profile/profile.json",
+        "file://controls/profile.json",
+    )
     new_cd_json = json.loads(new_cd_json_text)
 
-    with open((complytime_home / '.config/complytime/controls/catalog.json'), 'w') as file:
+    with open(
+        (complytime_home / ".config/complytime/controls/catalog.json"), "w"
+    ) as file:
         json.dump(new_cat_json, file)
-    with open((complytime_home / '.config/complytime/controls/profile.json'), 'w') as file:
+    with open(
+        (complytime_home / ".config/complytime/controls/profile.json"), "w"
+    ) as file:
         json.dump(new_prof_json, file)
-    with open((complytime_home / '.config/complytime/bundles/component-definition.json'), 'w') as file:
+    with open(
+        (complytime_home / ".config/complytime/bundles/component-definition.json"), "w"
+    ) as file:
         json.dump(new_cd_json, file)
 
     # shutil.copy(component_definition, complytime_home / '.config/complytime/bundles/')
-    # shutil.copy(pathlib.Path(repo_dir) / 'catalogs/simplified_nist_catalog/catalog.json', complytime_home / '.config/complytime/bundles/')
-    # shutil.copy(pathlib.Path(repo_dir) / 'profiles/simplified_nist_profile/profile.json', complytime_home / '.config/complytime/controls/')
+    # shutil.copy(pathlib.Path(repo_dir) / 'catalogs/simplified_nist_catalog/catalog.json',
+    #   complytime_home / '.config/complytime/bundles/')
+    # shutil.copy(pathlib.Path(repo_dir) / 'profiles/simplified_nist_profile/profile.json',
+    #   complytime_home / '.config/complytime/controls/')
 
     result = subprocess.run(
-        ['complytime', 'list', '--plain'],
+        ["complytime", "list", "--plain"],
         # cwd=complytime_home,
         capture_output=True,
     )
     assert result.returncode == 0
-    assert b'Title' in result.stdout
-    assert b'Framework ID' in result.stdout
+    assert b"Title" in result.stdout
+    assert b"Framework ID" in result.stdout
 
 
 @pytest.mark.slow
-def test_compdef_type_software_sync(tmp_repo: Tuple[str, Repo], complytime_home: pathlib.Path) -> None:
+def test_compdef_type_software_sync(
+    tmp_repo: Tuple[str, Repo], complytime_home: pathlib.Path
+) -> None:
     repo_dir, _ = tmp_repo
     repo_path = pathlib.Path(repo_dir)
     setup_for_catalog(repo_path, "simplified_nist_catalog", "catalog")
@@ -184,7 +209,7 @@ def test_compdef_type_software_sync(tmp_repo: Tuple[str, Repo], complytime_home:
     # Check the CLI sync-cac-content is successful
     assert result.exit_code == 0, result.output
 
-    test_product = 'rhel8'
+    test_product = "rhel8"
     test_cac_profile = "products/rhel8/profiles/example.profile"
     test_prof = "simplified_nist_profile"
     test_comp_path = f"component-definitions/{test_product}/component-definition.json"
@@ -193,7 +218,7 @@ def test_compdef_type_software_sync(tmp_repo: Tuple[str, Repo], complytime_home:
     setup_for_catalog(repo_path, test_cat, "catalog")
     setup_for_profile(repo_path, test_prof, "profile")
 
-    compdef_type = 'software'
+    compdef_type = "software"
 
     runner = CliRunner()
     result = runner.invoke(
@@ -228,42 +253,67 @@ def test_compdef_type_software_sync(tmp_repo: Tuple[str, Repo], complytime_home:
 
     # Fix trestle:// to file://
 
-    new_cat_json_text = (pathlib.Path(repo_dir) / 'catalogs/simplified_nist_catalog/catalog.json').read_text()
-    new_cat_json_text = new_cat_json_text.replace('trestle://catalogs/simplified_nist_catalog/catalog.json', 'file://controls/catalog.json')
+    new_cat_json_text = (
+        pathlib.Path(repo_dir) / "catalogs/simplified_nist_catalog/catalog.json"
+    ).read_text()
+    new_cat_json_text = new_cat_json_text.replace(
+        "trestle://catalogs/simplified_nist_catalog/catalog.json",
+        "file://controls/catalog.json",
+    )
     new_cat_json = json.loads(new_cat_json_text)
 
-    new_prof_json_text = (pathlib.Path(repo_dir) / 'profiles/simplified_nist_profile/profile.json').read_text()
-    new_prof_json_text = new_prof_json_text.replace('trestle://catalogs/simplified_nist_catalog/catalog.json', 'file://controls/catalog.json')
-    new_prof_json_text = new_prof_json_text.replace('"param_id"', '"param-id"')  # TODO compliance-trestle uses param_id and param-id interchangably, complytime requires param-id
+    new_prof_json_text = (
+        pathlib.Path(repo_dir) / "profiles/simplified_nist_profile/profile.json"
+    ).read_text()
+    new_prof_json_text = new_prof_json_text.replace(
+        "trestle://catalogs/simplified_nist_catalog/catalog.json",
+        "file://controls/catalog.json",
+    )
+    new_prof_json_text = new_prof_json_text.replace(
+        '"param_id"', '"param-id"'
+    )  # TODO compliance-trestle uses param_id and param-id interchangably, complytime requires param-id
     new_prof_json = json.loads(new_prof_json_text)
 
     new_cd_json_text = component_definition.read_text()
-    new_cd_json_text = new_cd_json_text.replace('trestle://profiles/simplified_nist_profile/profile.json', 'file://controls/profile.json')
+    new_cd_json_text = new_cd_json_text.replace(
+        "trestle://profiles/simplified_nist_profile/profile.json",
+        "file://controls/profile.json",
+    )
     new_cd_json = json.loads(new_cd_json_text)
 
-    with open((complytime_home / '.config/complytime/controls/catalog.json'), 'w') as file:
+    with open(
+        (complytime_home / ".config/complytime/controls/catalog.json"), "w"
+    ) as file:
         json.dump(new_cat_json, file)
-    with open((complytime_home / '.config/complytime/controls/profile.json'), 'w') as file:
+    with open(
+        (complytime_home / ".config/complytime/controls/profile.json"), "w"
+    ) as file:
         json.dump(new_prof_json, file)
-    with open((complytime_home / '.config/complytime/bundles/component-definition.json'), 'w') as file:
+    with open(
+        (complytime_home / ".config/complytime/bundles/component-definition.json"), "w"
+    ) as file:
         json.dump(new_cd_json, file)
 
     # shutil.copy(component_definition, complytime_home / '.config/complytime/bundles/')
-    # shutil.copy(pathlib.Path(repo_dir) / 'catalogs/simplified_nist_catalog/catalog.json', complytime_home / '.config/complytime/bundles/')
-    # shutil.copy(pathlib.Path(repo_dir) / 'profiles/simplified_nist_profile/profile.json', complytime_home / '.config/complytime/controls/')
+    # shutil.copy(pathlib.Path(repo_dir) / 'catalogs/simplified_nist_catalog/catalog.json',
+    #   complytime_home / '.config/complytime/bundles/')
+    # shutil.copy(pathlib.Path(repo_dir) / 'profiles/simplified_nist_profile/profile.json',
+    #   complytime_home / '.config/complytime/controls/')
 
     result = subprocess.run(
-        ['complytime', 'list', '--plain'],
+        ["complytime", "list", "--plain"],
         # cwd=complytime_home,
         capture_output=True,
     )
     assert result.returncode == 0
-    assert b'Title' in result.stdout
-    assert b'Framework ID' in result.stdout
+    assert b"Title" in result.stdout
+    assert b"Framework ID" in result.stdout
 
 
 @pytest.mark.slow
-def test_compdef_type_validation_sync(tmp_repo: Tuple[str, Repo], complytime_home: pathlib.Path) -> None:
+def test_compdef_type_validation_sync(
+    tmp_repo: Tuple[str, Repo], complytime_home: pathlib.Path
+) -> None:
     repo_dir, _ = tmp_repo
     repo_path = pathlib.Path(repo_dir)
     setup_for_catalog(repo_path, "simplified_nist_catalog", "catalog")
@@ -294,7 +344,7 @@ def test_compdef_type_validation_sync(tmp_repo: Tuple[str, Repo], complytime_hom
     # Check the CLI sync-cac-content is successful
     assert result.exit_code == 0, result.output
 
-    test_product = 'rhel8'
+    test_product = "rhel8"
     test_cac_profile = "products/rhel8/profiles/example.profile"
     test_prof = "simplified_nist_profile"
     test_comp_path = f"component-definitions/{test_product}/component-definition.json"
@@ -303,7 +353,7 @@ def test_compdef_type_validation_sync(tmp_repo: Tuple[str, Repo], complytime_hom
     setup_for_catalog(repo_path, test_cat, "catalog")
     setup_for_profile(repo_path, test_prof, "profile")
 
-    compdef_type = 'validation'
+    compdef_type = "validation"
 
     runner = CliRunner()
     result = runner.invoke(
@@ -338,35 +388,58 @@ def test_compdef_type_validation_sync(tmp_repo: Tuple[str, Repo], complytime_hom
 
     # Fix trestle:// to file://
 
-    new_cat_json_text = (pathlib.Path(repo_dir) / 'catalogs/simplified_nist_catalog/catalog.json').read_text()
-    new_cat_json_text = new_cat_json_text.replace('trestle://catalogs/simplified_nist_catalog/catalog.json', 'file://controls/catalog.json')
+    new_cat_json_text = (
+        pathlib.Path(repo_dir) / "catalogs/simplified_nist_catalog/catalog.json"
+    ).read_text()
+    new_cat_json_text = new_cat_json_text.replace(
+        "trestle://catalogs/simplified_nist_catalog/catalog.json",
+        "file://controls/catalog.json",
+    )
     new_cat_json = json.loads(new_cat_json_text)
 
-    new_prof_json_text = (pathlib.Path(repo_dir) / 'profiles/simplified_nist_profile/profile.json').read_text()
-    new_prof_json_text = new_prof_json_text.replace('trestle://catalogs/simplified_nist_catalog/catalog.json', 'file://controls/catalog.json')
-    new_prof_json_text = new_prof_json_text.replace('"param_id"', '"param-id"')  # TODO compliance-trestle uses param_id and param-id interchangably, complytime requires param-id
+    new_prof_json_text = (
+        pathlib.Path(repo_dir) / "profiles/simplified_nist_profile/profile.json"
+    ).read_text()
+    new_prof_json_text = new_prof_json_text.replace(
+        "trestle://catalogs/simplified_nist_catalog/catalog.json",
+        "file://controls/catalog.json",
+    )
+    new_prof_json_text = new_prof_json_text.replace(
+        '"param_id"', '"param-id"'
+    )  # TODO compliance-trestle uses param_id and param-id interchangably, complytime requires param-id
     new_prof_json = json.loads(new_prof_json_text)
 
     new_cd_json_text = component_definition.read_text()
-    new_cd_json_text = new_cd_json_text.replace('trestle://profiles/simplified_nist_profile/profile.json', 'file://controls/profile.json')
+    new_cd_json_text = new_cd_json_text.replace(
+        "trestle://profiles/simplified_nist_profile/profile.json",
+        "file://controls/profile.json",
+    )
     new_cd_json = json.loads(new_cd_json_text)
 
-    with open((complytime_home / '.config/complytime/controls/catalog.json'), 'w') as file:
+    with open(
+        (complytime_home / ".config/complytime/controls/catalog.json"), "w"
+    ) as file:
         json.dump(new_cat_json, file)
-    with open((complytime_home / '.config/complytime/controls/profile.json'), 'w') as file:
+    with open(
+        (complytime_home / ".config/complytime/controls/profile.json"), "w"
+    ) as file:
         json.dump(new_prof_json, file)
-    with open((complytime_home / '.config/complytime/bundles/component-definition.json'), 'w') as file:
+    with open(
+        (complytime_home / ".config/complytime/bundles/component-definition.json"), "w"
+    ) as file:
         json.dump(new_cd_json, file)
 
     # shutil.copy(component_definition, complytime_home / '.config/complytime/bundles/')
-    # shutil.copy(pathlib.Path(repo_dir) / 'catalogs/simplified_nist_catalog/catalog.json', complytime_home / '.config/complytime/bundles/')
-    # shutil.copy(pathlib.Path(repo_dir) / 'profiles/simplified_nist_profile/profile.json', complytime_home / '.config/complytime/controls/')
+    # shutil.copy(pathlib.Path(repo_dir) / 'catalogs/simplified_nist_catalog/catalog.json',
+    #   complytime_home / '.config/complytime/bundles/')
+    # shutil.copy(pathlib.Path(repo_dir) / 'profiles/simplified_nist_profile/profile.json',
+    #   complytime_home / '.config/complytime/controls/')
 
     result = subprocess.run(
-        ['complytime', 'list', '--plain'],
+        ["complytime", "list", "--plain"],
         # cwd=complytime_home,
         capture_output=True,
     )
     assert result.returncode == 0
-    assert b'Title' in result.stdout
-    assert b'Framework ID' in result.stdout
+    assert b"Title" in result.stdout
+    assert b"Framework ID" in result.stdout
