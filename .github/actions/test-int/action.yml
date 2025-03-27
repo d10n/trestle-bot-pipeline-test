@@ -19,16 +19,6 @@ runs:
       with:
         python-version: "3.9"
 
-    # https://docs.github.com/en/actions/security-guides/security-hardening-for-github-actions#using-an-intermediate-environment-variable
-    - name: Pull the image
-      if: ${{ inputs.build == 'false' }}
-      run: |
-        podman pull "${IMAGE}"
-        echo "TRESTLEBOT_IMAGE=$(sed -e 's/^docker-daemon://' <<<${IMAGE})" >> "$GITHUB_ENV"
-      env:
-        IMAGE: ${{ inputs.image }}
-      shell: bash
-
     - name: Run tests
       run: make test-int
       shell: bash

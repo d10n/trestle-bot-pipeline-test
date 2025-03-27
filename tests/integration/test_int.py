@@ -6,6 +6,7 @@ Integration tests for validating that trestle-bot output is consumable by comply
 """
 import json
 import logging
+import os
 import pathlib
 import subprocess
 from typing import Generator, Tuple, TypeVar
@@ -111,6 +112,10 @@ def test_full_sync(tmp_repo: Tuple[str, Repo], complytime_home: pathlib.Path) ->
         ],
     )
     # Check the CLI sync-cac-content is successful
+    print("Current directory: {}".format(os.curdir))
+    out = subprocess.run(["find", ".", "-ls"], capture_output=True, text=True)
+    print(out.stdout)
+    print(out.stderr)
     assert result.stdout == "test debug"
     assert result.exit_code == 0
     component_definition = repo_path.joinpath(test_comp_path)
