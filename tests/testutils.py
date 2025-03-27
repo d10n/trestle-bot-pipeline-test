@@ -6,12 +6,14 @@
 
 import argparse
 import logging
+import os
 import pathlib
 import shutil
 import tempfile
 from typing import Dict, List, Optional
 
 from git.repo import Repo
+from ruamel.yaml import YAML
 from trestle.common.err import TrestleError
 from trestle.common.model_utils import ModelUtils
 from trestle.core.base_model import OscalBaseModel
@@ -21,8 +23,8 @@ from trestle.oscal import catalog as cat
 from trestle.oscal import component as comp
 from trestle.oscal import profile as prof
 
+from trestlebot.cli.log import configure_logger
 from trestlebot.const import YAML_EXTENSION
-from trestlebot.entrypoints.log import configure_logger
 
 
 TEST_DATA_DIR = pathlib.Path(__file__).parent.resolve() / "data/"
@@ -230,6 +232,29 @@ def setup_for_compdef(
     )
 
     return args
+
+
+def setup_for_cac_content_dir(tmp_dir: str, cac_content_src_dir: pathlib.Path) -> None:
+    """
+    Setup cac content dir for testing
+    """
+    shutil.copytree(cac_content_src_dir, tmp_dir, dirs_exist_ok=True)
+
+    # modify abcd-levels.yml control file for sync OSCAL content testing
+    abcd_levels_control_file_path = pathlib.Path(
+        os.path.join(tmp_dir, "controls", "abcd-levels.yml")
+    )
+    yaml = YAML()
+    data = yaml.load(abcd_levels_control_file_path)
+
+    for control in data["controls"]:
+        if control["id"] == "AC-1":
+            rules = control["rules"]
+            rules.append("file_groupownership_sshd_private_key")
+            rules.append("var_sshd_set_keepalive=1")
+            rules.append("var_system_crypto_policy=fips")
+
+    yaml.dump(data, abcd_levels_control_file_path)
 
 
 def setup_rules_view(

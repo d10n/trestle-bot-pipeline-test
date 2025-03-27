@@ -125,7 +125,9 @@ class SyncCacContentTask(TaskBase):
         profiles = get_profiles_from_products(self.cac_content_root, [self.product])
         for profile in profiles:
             if profile.profile_id == self.cac_profile_id:
-                self.rules = profile.rules
+                self.rules = list(
+                    filter(lambda x: x not in profile.unselected_rules, profile.rules)
+                )
                 break
 
     def _get_rules_properties(self) -> List[Property]:
@@ -357,7 +359,21 @@ class SyncCacContentTask(TaskBase):
             implemented_req = generate_sample_model(ImplementedRequirement)
             implemented_req.control_id = control_id
             self._handle_response(implemented_req, control)
-            rule_ids = self._process_rule_ids(control.rules)
+            # Rules and variables are collected from rules section in control files, but for
+            # product agnostic control files some rules are unselected or variables are overridden
+            # in the profile level of products and should not be included in transformed content.
+            unselected_rules_or_vars = list(
+                filter(lambda x: x not in self.rules, control.rules)
+            )
+            if unselected_rules_or_vars:
+                logger.info(
+                    f"Unselected rules or vars in {self.cac_profile_id} profile for {self.product}:"
+                    f"{', '.join(unselected_rules_or_vars)}"
+                )
+            only_rules_in_profile = list(
+                filter(lambda x: x in self.rules, control.rules)
+            )
+            rule_ids = self._process_rule_ids(only_rules_in_profile)
             self._attach_rules(implemented_req, rule_ids, rules_transformer)
             return implemented_req
         return None
