@@ -112,7 +112,7 @@ def test_full_sync(tmp_repo: Tuple[str, Repo], complytime_home: pathlib.Path) ->
         ],
     )
     # Check the CLI sync-cac-content is successful
-    print("Current directory: {}".format(os.curdir))
+    print("Current directory: {}".format(pathlib.Path(os.curdir).resolve()))
     out = subprocess.run(["find", ".", "-ls"], capture_output=True, text=True)
     print(out.stdout)
     print(out.stderr)
