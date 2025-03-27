@@ -5,6 +5,7 @@ import functools
 import subprocess
 from pathlib import Path
 
+
 root_repo_dir = Path(__file__).resolve().parent.parent.parent
 scripts_dir = root_repo_dir / "scripts"
 

@@ -8,7 +8,7 @@ import json
 import logging
 import pathlib
 import subprocess
-from typing import Tuple, Generator, TypeVar
+from typing import Generator, Tuple, TypeVar
 
 import pytest
 from click import BaseCommand
@@ -16,7 +16,11 @@ from click.testing import CliRunner
 from git import Repo
 
 from tests.testutils import TEST_DATA_DIR, setup_for_catalog, setup_for_profile
-from trestlebot.cli.commands.sync_cac_content import sync_cac_catalog_cmd, sync_content_to_component_definition_cmd
+from trestlebot.cli.commands.sync_cac_content import (
+    sync_cac_catalog_cmd,
+    sync_content_to_component_definition_cmd,
+)
+
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)

@@ -1,16 +1,15 @@
 import glob
-import json
-import shutil
-import tempfile
 import hashlib
+import json
+import os
+import shutil
+import subprocess
+import tempfile
+from pathlib import Path
 from typing import Generator, TypeVar
 
 import pytest
 
-
-import os
-import subprocess
-from pathlib import Path
 
 root_repo_dir = Path(__file__).resolve().parent.parent.parent
 scripts_dir = root_repo_dir / "scripts"
