@@ -3,6 +3,7 @@ import json
 import shutil
 import tempfile
 import hashlib
+from typing import Generator, TypeVar
 
 import pytest
 
@@ -17,6 +18,9 @@ complytime_cache_dir = Path('/tmp/trestle-bot-complytime-cache')
 complytime_cache_dir.mkdir(parents=True, exist_ok=True)
 int_test_data_dir = Path(__file__).parent.parent / "integration_data/"
 _TEST_PREFIX = "trestlebot_tests"
+
+T = TypeVar("T")
+YieldFixture = Generator[T, None, None]
 
 def is_complytime_installed(install_dir: Path) -> bool:
     install_dir / ".config/complytime"
@@ -44,7 +48,7 @@ def sha256sum(filepath: Path) -> str:
         return sha256.hexdigest()
 
 @pytest.fixture(autouse=True)
-def run_before_and_after_tests():
+def complytime_home() -> YieldFixture[Path]:
     # Setup
     complytime_cache_dir.mkdir(parents=True, exist_ok=True)
     complytime_home = Path(tempfile.mkdtemp(prefix=_TEST_PREFIX))
@@ -93,11 +97,20 @@ def run_before_and_after_tests():
     os.environ['XDG_CONFIG_HOME'] = str(complytime_home / '.config')
     os.environ['PATH'] = str(complytime_home / 'bin') + ':' + os.environ['PATH']
 
-    yield # run the test
+    yield complytime_home # run the test
 
     # Teardown
-    os.environ['HOME'] = orig_home
-    os.environ['PATH'] = orig_path
-    os.environ['XDG_CONFIG_HOME'] = orig_xdg_config_home
+    if orig_home is None:
+        os.unsetenv('HOME')
+    else:
+        os.environ['HOME'] = orig_home
+    if orig_path is None:
+        os.unsetenv('PATH')
+    else:
+        os.environ['PATH'] = orig_path
+    if orig_xdg_config_home is None:
+        os.unsetenv('XDG_CONFIG_HOME')
+    else:
+        os.environ['XDG_CONFIG_HOME'] = orig_xdg_config_home
     shutil.rmtree(complytime_home)
 
