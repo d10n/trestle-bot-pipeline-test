@@ -118,13 +118,6 @@ def test_full_sync(tmp_repo: Tuple[str, Repo], complytime_home: pathlib.Path) ->
     print(result.stdout)
     # print(result.stderr)
     print(result.exit_code)
-    # assert result.stdout == "test debug"
-
-    print(result.exception)
-    print(result.exception.__traceback__)
-    # import traceback
-    #
-    # traceback.print_exception(result.exception, file=sys.stdout)
     assert result.exit_code == 0
     component_definition = repo_path.joinpath(test_comp_path)
     # Check if the component definition is created
@@ -204,7 +197,7 @@ def test_compdef_type_software_sync(
         sync_cac_catalog_cmd,
         [
             "--cac-content-root",
-            test_content_dir,
+            str(test_content_dir),
             "--repo-path",
             str(repo_path.resolve()),
             "--policy-id",
@@ -224,7 +217,7 @@ def test_compdef_type_software_sync(
     assert result.exit_code == 0, result.output
 
     test_product = "rhel8"
-    test_cac_profile = "products/rhel8/profiles/example.profile"
+    test_cac_profile = test_content_dir / "products/rhel8/profiles/example.profile"
     test_prof = "simplified_nist_profile"
     test_comp_path = f"component-definitions/{test_product}/component-definition.json"
     test_cat = "simplified_nist_catalog"
@@ -243,7 +236,7 @@ def test_compdef_type_software_sync(
             "--repo-path",
             str(repo_path.resolve()),
             "--cac-content-root",
-            test_content_dir,
+            str(test_content_dir),
             "--cac-profile",
             test_cac_profile,
             "--oscal-profile",
@@ -361,7 +354,7 @@ def test_compdef_type_validation_sync(
     assert result.exit_code == 0, result.output
 
     test_product = "rhel8"
-    test_cac_profile = "products/rhel8/profiles/example.profile"
+    test_cac_profile = test_content_dir / "products/rhel8/profiles/example.profile"
     test_prof = "simplified_nist_profile"
     test_comp_path = f"component-definitions/{test_product}/component-definition.json"
     test_cat = "simplified_nist_catalog"
