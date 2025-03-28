@@ -120,7 +120,10 @@ def test_full_sync(tmp_repo: Tuple[str, Repo], complytime_home: pathlib.Path) ->
     # assert result.stdout == "test debug"
     import traceback
 
-    traceback.print_exception(result.exception)
+    try:
+        raise result.exception
+    except Exception as e:
+        traceback.print_exc()
     assert result.exit_code == 0
     component_definition = repo_path.joinpath(test_comp_path)
     # Check if the component definition is created
