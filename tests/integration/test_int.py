@@ -13,7 +13,7 @@ from typing import Generator, Tuple, TypeVar
 
 import pytest
 from click import BaseCommand
-from click.testing import CliRunner
+from click.testing import CliRunner, Result
 from git import Repo
 
 from tests.testutils import TEST_DATA_DIR, setup_for_catalog, setup_for_profile
@@ -56,7 +56,7 @@ def test_full_sync(tmp_repo: Tuple[str, Repo], complytime_home: pathlib.Path) ->
 
     runner = CliRunner()
     assert isinstance(sync_cac_catalog_cmd, BaseCommand)
-    result = runner.invoke(
+    result: Result = runner.invoke(
         sync_cac_catalog_cmd,
         [
             "--cac-content-root",
@@ -118,6 +118,9 @@ def test_full_sync(tmp_repo: Tuple[str, Repo], complytime_home: pathlib.Path) ->
     # print(result.stderr)
     print(result.exit_code)
     # assert result.stdout == "test debug"
+    import traceback
+
+    traceback.print_exception(result.exception)
     assert result.exit_code == 0
     component_definition = repo_path.joinpath(test_comp_path)
     # Check if the component definition is created
