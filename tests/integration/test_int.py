@@ -9,6 +9,7 @@ import logging
 import os
 import pathlib
 import subprocess
+import sys
 from typing import Generator, Tuple, TypeVar
 
 import pytest
@@ -118,12 +119,12 @@ def test_full_sync(tmp_repo: Tuple[str, Repo], complytime_home: pathlib.Path) ->
     # print(result.stderr)
     print(result.exit_code)
     # assert result.stdout == "test debug"
-    import traceback
 
-    try:
-        raise result.exception
-    except Exception as e:
-        traceback.print_exc()
+    print(result.exception)
+    print(result.exception.__traceback__)
+    # import traceback
+    #
+    # traceback.print_exception(result.exception, file=sys.stdout)
     assert result.exit_code == 0
     component_definition = repo_path.joinpath(test_comp_path)
     # Check if the component definition is created
