@@ -114,8 +114,8 @@ def test_full_sync(tmp_repo: Tuple[str, Repo], complytime_home: pathlib.Path) ->
     # Check the CLI sync-cac-content is successful
     print("Current directory: {}".format(pathlib.Path(os.curdir).resolve()))
     out = subprocess.run(["find", ".", "-ls"], capture_output=True, text=True)
-    print(out.stdout)
-    print(out.stderr)
+    print(result.stdout)
+    print(result.stderr)
     assert result.stdout == "test debug"
     assert result.exit_code == 0
     component_definition = repo_path.joinpath(test_comp_path)
@@ -311,6 +311,8 @@ def test_compdef_type_software_sync(
         # cwd=complytime_home,
         capture_output=True,
     )
+    print(result.stdout)
+    print(result.stderr)
     assert result.returncode == 0
     assert b"Title" in result.stdout
     assert b"Framework ID" in result.stdout
