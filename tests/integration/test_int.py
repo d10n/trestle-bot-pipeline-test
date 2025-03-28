@@ -115,7 +115,8 @@ def test_full_sync(tmp_repo: Tuple[str, Repo], complytime_home: pathlib.Path) ->
     print("Current directory: {}".format(pathlib.Path(os.curdir).resolve()))
     out = subprocess.run(["find", ".", "-ls"], capture_output=True, text=True)
     print(result.stdout)
-    print(result.stderr)
+    # print(result.stderr)
+    print(result.exit_code)
     assert result.stdout == "test debug"
     assert result.exit_code == 0
     component_definition = repo_path.joinpath(test_comp_path)
