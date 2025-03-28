@@ -81,7 +81,7 @@ def test_full_sync(tmp_repo: Tuple[str, Repo], complytime_home: pathlib.Path) ->
     assert result.exit_code == 0, result.output
 
     test_product = "rhel8"
-    test_cac_profile = "products/rhel8/profiles/example.profile"
+    test_cac_profile = test_content_dir / "products/rhel8/profiles/example.profile"
     test_prof = "simplified_nist_profile"
     test_comp_path = f"component-definitions/{test_product}/component-definition.json"
     test_cat = "simplified_nist_catalog"
@@ -98,7 +98,7 @@ def test_full_sync(tmp_repo: Tuple[str, Repo], complytime_home: pathlib.Path) ->
             "--repo-path",
             str(repo_path.resolve()),
             "--cac-content-root",
-            test_content_dir,
+            str(test_content_dir),
             "--cac-profile",
             test_cac_profile,
             "--oscal-profile",
