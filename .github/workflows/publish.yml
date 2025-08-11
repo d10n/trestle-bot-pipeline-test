@@ -40,7 +40,7 @@ jobs:
       id-token: write # needed for signing the images with GitHub OIDC Token
     steps:
       - name: Login to Quay
-        uses: docker/login-action@9780b0c442fbb1117ed29e0efdff1e18412f7567 # pin@v3
+        uses: docker/login-action@184bdaa0721073962dff0199f1fb9940f07167d1 # pin@v3
         with:
           username: ${{ secrets.QUAY_USER }}
           password: ${{ secrets.QUAY_TOKEN }}
